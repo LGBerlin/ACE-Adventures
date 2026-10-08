@@ -71,10 +71,6 @@ func _load_state() -> void:
 
 func _save_state() -> void:
 	_store_campaign()
-	if active_campaign.is_empty():
-		return
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	f.store_string(JSON.stringify(state, "\t"))
 
 func _check_updates() -> void:
 	update_status.text = "Checking GitHub Releases..."
@@ -209,6 +205,8 @@ func _button(t: String, callback: Callable) -> Button:
 
 func _clear_screen() -> void:
 	for child in get_children():
+		if child == update_manager:
+			continue
 		remove_child(child)
 		child.queue_free()
 
