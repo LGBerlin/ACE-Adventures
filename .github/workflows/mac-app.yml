@@ -57,9 +57,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create v0.3.0 \
+          gh release create v0.3.1 \
             "build/ACE Adventures Mac.zip" \
             "build/ACE Adventures Mac.zip.sha256" \
-            --title "ACE Adventures v0.3.0" \
+            --title "ACE Adventures v0.3.1" \
             --notes "Campaign Library, per-campaign saves, Save and Return, and in-app update support." \
             --latest
