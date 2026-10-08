@@ -1,0 +1,25 @@
+name: ACE Adventures V2 Core Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v2/**'
+      - '.github/workflows/v2-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  updater-tests:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run updater unit tests
+        run: |
+          cd v2
+          python3 -m unittest -v test_updater.py
+      - name: Compile all Python source
+        run: |
+          python3 -m compileall -q v2
