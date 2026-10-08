@@ -74,8 +74,11 @@ func _ready() -> void:
 	rng.randomize()
 	_load_state()
 	_load_library()
-	update_manager = preload("res://updater.gd").new()
-	add_child(update_manager)
+	if get_node_or_null("/root/PackUpdater") != null:
+		update_manager = get_node("/root/PackUpdater")
+	else:
+		update_manager = preload("res://updater.gd").new()
+		add_child(update_manager)
 	_build()
 
 func _load_state() -> void:
@@ -92,12 +95,12 @@ func _save_state() -> void:
 
 func _check_updates() -> void:
 	update_status.text = "Checking GitHub Releases..."
-	var response: Dictionary = await update_manager.check_update()
+	var response: Dictionary = await update_manager.check() if update_manager.has_method("check") else await update_manager.check_update()
 	update_status.text = str(response.get("message", response.get("error", "Unknown update status")))
 
 func _install_updates() -> void:
 	update_status.text = "Downloading verified update. Do not close the game..."
-	var response: Dictionary = await update_manager.install_update()
+	var response: Dictionary = await update_manager.download_and_stage() if update_manager.has_method("download_and_stage") else await update_manager.install_update()
 	update_status.text = str(response.get("message", response.get("error", "Update failed")))
 
 func _fresh_state() -> Dictionary:
