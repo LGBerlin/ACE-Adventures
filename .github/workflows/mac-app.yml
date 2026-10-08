@@ -74,8 +74,18 @@ jobs:
 
       - name: Publish API-free update manifest
         run: |
-          HASH=$(cat "build/ACE Adventures Mac.zip.sha256")
-          printf '{\n  "version": "0.3.3",\n  "url": "https://github.com/LGBerlin/ACE-Adventures/releases/download/v0.3.3/ACE%20Adventures%20Mac.zip",\n  "sha256": "%s"\n}\n' "$HASH" > godot-update.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          digest = Path("build/ACE Adventures Mac.zip.sha256").read_text().strip()
+          assert len(digest) == 64 and all(c in "0123456789abcdef" for c in digest), "Invalid SHA-256"
+          manifest = {
+              "version": "0.3.3",
+              "url": "https://github.com/LGBerlin/ACE-Adventures/releases/download/v0.3.3/ACE%20Adventures%20Mac.zip",
+              "sha256": digest
+          }
+          Path("godot-update.json").write_text(json.dumps(manifest, indent=2) + "\n")
+          PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add godot-update.json
