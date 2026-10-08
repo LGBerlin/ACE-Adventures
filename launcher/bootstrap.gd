@@ -3,6 +3,8 @@ extends Control
 const BASE_PACK := "res://base-game.pck"
 const ACTIVE_PACK := "user://updates/active-game.pck"
 const PREVIOUS_PACK := "user://updates/previous-game.pck"
+const META := "user://updates/installed.json"
+const OLD_META := "user://updates/previous-installed.json"
 const GAME_SCENE := "res://main.tscn"
 
 func _ready() -> void:
@@ -32,7 +34,11 @@ func _rollback() -> void:
 		DirAccess.remove_absolute(active)
 	if FileAccess.file_exists(PREVIOUS_PACK):
 		DirAccess.rename_absolute(prior, active)
-	# Rollback must also reverse update metadata, handled in next validation stage.
+	if FileAccess.file_exists(OLD_META):
+		if FileAccess.file_exists(META):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(META))
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(OLD_META), ProjectSettings.globalize_path(META))
+
 
 func _show_problem(message: String) -> void:
 	var box := VBoxContainer.new()
