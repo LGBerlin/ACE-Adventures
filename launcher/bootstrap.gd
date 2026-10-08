@@ -9,7 +9,10 @@ const GAME_SCENE := "res://main.tscn"
 
 func _ready() -> void:
 	# A base copy of the game is bundled; external content can override it.
-	if not ProjectSettings.load_resource_pack(BASE_PACK, true):
+	var base_path := ProjectSettings.globalize_path(BASE_PACK)
+	if OS.has_feature("macos") and not OS.has_feature("editor"):
+		base_path = OS.get_executable_path().get_base_dir().path_join("../Resources/base-game.pck").simplify_path()
+	if not ProjectSettings.load_resource_pack(base_path, true):
 		_show_problem("Bundled game content is missing.")
 		return
 	if FileAccess.file_exists(ACTIVE_PACK):
