@@ -23,9 +23,11 @@ jobs:
       - name: Show version and obtain matching export templates
         run: |
           "$GODOT" --headless --version
-          VERSION=$("$GODOT" --headless --version | sed -E 's/^(4\.[0-9]+(\.[0-9]+)?\.[a-z0-9]+).*/\1/')
-          echo "Detected: $VERSION"
-          curl -fL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/$VERSION/Godot_v${VERSION}_export_templates.tpz"
+          RAW=$("$GODOT" --headless --version)
+          VERSION=${RAW%%.official*}
+          RELEASE_TAG=${VERSION/.stable/-stable}
+          echo "Detected Godot: $VERSION"
+          curl -fL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/$RELEASE_TAG/Godot_v${RELEASE_TAG}_export_templates.tpz"
           mkdir -p "$HOME/Library/Application Support/Godot/export_templates/$VERSION"
           unzip -q templates.tpz -d template_unpack
           cp template_unpack/templates/* "$HOME/Library/Application Support/Godot/export_templates/$VERSION/"
