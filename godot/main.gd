@@ -352,7 +352,7 @@ func _build() -> void:
 	var install_button := _button("INSTALL UPDATE", _install_updates)
 	install_button.custom_minimum_size.x = 170
 	toolbar.add_child(install_button)
-	update_status = _label("Game v0.3.3 · Campaigns are saved separately from app updates.", 12)
+	update_status = _label("Game v0.4.0 · Campaigns are saved separately from app updates.", 12)
 	update_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	update_area.add_child(update_status)
 	if active_campaign.is_empty():
@@ -528,11 +528,14 @@ func _build_game(root: VBoxContainer) -> void:
 	adventure.add_child(_button("ATTEMPT ACTION → ROLL D20", _attempt_action))
 	var sprite := _panel("Pixel sprite")
 	right.add_child(sprite.get_parent())
-	var picture := ColorRect.new()
-	picture.color = Color("#b8af99")
+	var picture := TextureRect.new()
+	picture.texture = preload("res://sprite_factory.gd").generate(c)
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.custom_minimum_size = Vector2(210, 190)
 	sprite.add_child(picture)
-	sprite.add_child(_label("Sprite system: graphical asset pipeline pending", 11))
+	sprite.add_child(_label("Persistent pixel character · " + str(c.get("race", "")) + " " + str(c.get("path", "")), 11))
 	var identity2 := _panel("Path & affinity")
 	right.add_child(identity2.get_parent())
 	identity2.add_child(_label(str(c.path)))
