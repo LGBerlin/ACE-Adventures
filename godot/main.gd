@@ -36,6 +36,8 @@ var rng := RandomNumberGenerator.new()
 var state: Dictionary = {}
 var library: Dictionary = {"campaigns": {}}
 var active_campaign: String = ""
+var selected_campaign_id: String = ""
+var show_new_campaign: bool = false
 var campaign_title_input: LineEdit
 var campaign_party_input: SpinBox
 var name_input: LineEdit
@@ -129,6 +131,8 @@ func _create_campaign() -> void:
 	var players := int(campaign_party_input.value)
 	library["campaigns"][id] = {"title": title, "players": players, "state": _fresh_state()}
 	_write_library()
+	selected_campaign_id = id
+	show_new_campaign = false
 	_open_campaign(id)
 
 func _open_campaign(id: String) -> void:
@@ -144,35 +148,144 @@ func _exit_campaign() -> void:
 	state = _fresh_state()
 	_build()
 
+func _library_frame() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#3c342c")
+	style.border_color = Color("#816b50")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(14)
+	return style
+
+func _forest_art() -> TextureRect:
+	# Generated locally; no external copyrighted or watermarked image.
+	var img := Image.create(256, 120, false, Image.FORMAT_RGBA8)
+	img.fill(Color("#162a2b"))
+	var art_rng := RandomNumberGenerator.new()
+	art_rng.seed = 831946
+	for x in range(256):
+		for y in range(120):
+			var shade := float(y) / 120.0
+			var base := Color("#173238").lerp(Color("#38584a"), shade)
+			if y > 93:
+				base = Color("#796e51") if art_rng.randf() > 0.23 else Color("#4d5a44")
+			img.set_pixel(x, y, base)
+	# Layered pixel-art forest canopy and trunks.
+	for i in range(44):
+		var x := art_rng.randi_range(0, 255)
+		var y := art_rng.randi_range(10, 85)
+		var width := art_rng.randi_range(3, 8)
+		var trunk := Color("#1c2926")
+		for xx in range(maxi(0, x - 1), mini(256, x + 2)):
+			for yy in range(y, 96):
+				img.set_pixel(xx, yy, trunk)
+		var leaf := Color("#39644f") if i % 3 == 0 else Color("#2e5247")
+		for xx in range(maxi(0, x-width), mini(256, x+width)):
+			for yy in range(maxi(0, y-width), mini(95, y+width)):
+				if abs(xx-x)+abs(yy-y) < width*2:
+					img.set_pixel(xx, yy, leaf)
+	# Ancient stone gate.
+	for x in range(93, 166):
+		for y in range(36, 90):
+			if (x < 110 or x > 149 or y < 47) and (x + y) % 13 != 0:
+				img.set_pixel(x, y, Color("#748b81"))
+	for x in range(110, 150):
+		for y in range(48, 90):
+			img.set_pixel(x, y, Color("#152628"))
+	var picture := TextureRect.new()
+	picture.texture = ImageTexture.create_from_image(img)
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	picture.custom_minimum_size.y = 340
+	picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return picture
+
 func _build_library(root: VBoxContainer) -> void:
-	var pane := _panel("Campaign Library")
-	root.add_child(pane.get_parent())
-	pane.add_child(_label("Choose a campaign, or begin a new adventure. Every campaign has its own character and save."))
+	var area := HBoxContainer.new()
+	area.add_theme_constant_override("separation", 18)
+	area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(area)
+	var sidebar_panel := PanelContainer.new()
+	sidebar_panel.add_theme_stylebox_override("panel", _library_frame())
+	sidebar_panel.custom_minimum_size.x = 250
+	area.add_child(sidebar_panel)
+	var sidebar := VBoxContainer.new()
+	sidebar.add_theme_constant_override("separation", 12)
+	sidebar_panel.add_child(sidebar)
+	sidebar.add_child(_label("CAMPAIGNS", 22))
+	sidebar.add_child(_button("+  NEW CAMPAIGN", func(): _set_new_campaign(true)))
+	var list_scroll := ScrollContainer.new()
+	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar.add_child(list_scroll)
+	var entries := VBoxContainer.new()
+	entries.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list_scroll.add_child(entries)
 	var campaigns: Dictionary = library["campaigns"]
+	if selected_campaign_id.is_empty() and not campaigns.is_empty():
+		selected_campaign_id = str(campaigns.keys()[0])
 	for id in campaigns:
-		var campaign: Dictionary = campaigns[id]
-		var saved: Dictionary = campaign.get("state", {})
-		var char_data: Dictionary = saved.get("character", {})
-		var description := str(campaign.get("title", "Untitled"))
-		if not char_data.is_empty():
-			description += "  ·  " + str(char_data.get("name", "Adventurer")) + " / Level " + str(char_data.get("level", 1))
-		else:
-			description += "  ·  Character not created"
+		var item: Dictionary = campaigns[id]
 		var campaign_id: String = str(id)
-		pane.add_child(_button("CONTINUE  ·  " + description, func(): _open_campaign(campaign_id)))
-	pane.add_child(_label("NEW CAMPAIGN", 18))
-	campaign_title_input = LineEdit.new()
-	campaign_title_input.placeholder_text = "Campaign name"
-	pane.add_child(campaign_title_input)
-	campaign_party_input = SpinBox.new()
-	campaign_party_input.min_value = 1
-	campaign_party_input.max_value = 8
-	campaign_party_input.value = 1
-	pane.add_child(_label("Number of players (future multiplayer planning)", 12))
-	pane.add_child(campaign_party_input)
-	status = _label("")
-	pane.add_child(status)
-	pane.add_child(_button("CREATE CAMPAIGN", _create_campaign))
+		var label_text := str(item.get("title", "Untitled"))
+		var select_button := _button(label_text, func(): _select_campaign(campaign_id))
+		select_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		if campaign_id == selected_campaign_id and not show_new_campaign:
+			select_button.modulate = Color("#f0ce8f")
+		entries.add_child(select_button)
+	sidebar.add_child(_label("LOCAL CAMPAIGNS · AUTO-SAVED", 11))
+	var detail_panel := PanelContainer.new()
+	detail_panel.add_theme_stylebox_override("panel", _library_frame())
+	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	area.add_child(detail_panel)
+	var detail := VBoxContainer.new()
+	detail.add_theme_constant_override("separation", 14)
+	detail_panel.add_child(detail)
+	if show_new_campaign:
+		detail.add_child(_label("NEW ADVENTURE", 25))
+		detail.add_child(_label("Name your campaign. Every campaign has an independent character, story and saved world.", 14))
+		campaign_title_input = LineEdit.new()
+		campaign_title_input.placeholder_text = "Campaign name"
+		detail.add_child(campaign_title_input)
+		detail.add_child(_label("NUMBER OF PLAYERS (MULTIPLAYER COMING LATER)", 13))
+		campaign_party_input = SpinBox.new()
+		campaign_party_input.min_value = 1
+		campaign_party_input.max_value = 8
+		campaign_party_input.value = 1
+		detail.add_child(campaign_party_input)
+		status = _label("")
+		detail.add_child(status)
+		detail.add_child(_button("CREATE CAMPAIGN →", _create_campaign))
+		detail.add_child(_button("← BACK TO CAMPAIGNS", func(): _set_new_campaign(false)))
+	elif campaigns.has(selected_campaign_id):
+		var selected: Dictionary = campaigns[selected_campaign_id]
+		var saved: Dictionary = selected.get("state", {})
+		var hero: Dictionary = saved.get("character", {})
+		detail.add_child(_label("CONTINUE ADVENTURE", 25))
+		detail.add_child(_forest_art())
+		detail.add_child(_label(str(selected.get("title", "Untitled")), 25))
+		if hero.is_empty():
+			detail.add_child(_label("Your character awaits the first roulette roll.", 15))
+		else:
+			detail.add_child(_label("%s · Level %s · %s %s" % [hero.get("name","Adventurer"), hero.get("level",1), hero.get("race",""), hero.get("path", hero.get("class",""))], 15))
+		var bottom := HBoxContainer.new()
+		bottom.alignment = BoxContainer.ALIGNMENT_END
+		detail.add_child(bottom)
+		var launch_id: String = selected_campaign_id
+		bottom.add_child(_button("CONTINUE →", func(): _open_campaign(launch_id)))
+	else:
+		detail.add_child(_label("YOUR NEXT ADVENTURE BEGINS HERE", 24))
+		detail.add_child(_forest_art())
+		detail.add_child(_label("Create a campaign to begin your story.", 15))
+
+func _select_campaign(id: String) -> void:
+	selected_campaign_id = id
+	show_new_campaign = false
+	_build()
+
+func _set_new_campaign(enabled: bool) -> void:
+	show_new_campaign = enabled
+	_build()
 
 func _label(t: String, sz: int = 16) -> Label:
 	var l := Label.new()
