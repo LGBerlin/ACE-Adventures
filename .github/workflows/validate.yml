@@ -52,6 +52,6 @@ jobs:
           assert 'sprite_factory.gd' in src
           assert 'sprite_seed' in sprite
           assert 'FileAccess.get_sha256' in updater
-          assert re.search(r'const VERSION := "([0-9]+\\.){2}[0-9]+"', updater)
+          assert 'const VERSION := "0.4.0"' in updater
           print("Project invariants validated.")
           PY
