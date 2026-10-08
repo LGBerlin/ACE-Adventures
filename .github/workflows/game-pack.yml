@@ -1,0 +1,95 @@
+name: Publish ACE Adventures Game Pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Game version (e.g. 0.5.1)
+        required: true
+        type: string
+      publish:
+        description: Publish after validation
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ace-game-pack-publishing
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate version
+        env:
+          GAME_VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import os,re
+          assert re.fullmatch(r'[0-9]+[.][0-9]+[.][0-9]+',os.environ['GAME_VERSION'])
+          PY
+      - name: Install Godot and templates
+        run: |
+          brew install --cask godot
+          GODOT_APP="$(find /Applications -maxdepth 2 -name 'Godot*.app' -print -quit)"
+          test -n "$GODOT_APP"
+          echo "GODOT=$GODOT_APP/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+          RAW=$("$GODOT_APP/Contents/MacOS/Godot" --headless --version)
+          VERSION=${RAW%%.official*}
+          TAG=${VERSION/.stable/-stable}
+          curl -fL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/$TAG/Godot_v${TAG}_export_templates.tpz"
+          mkdir -p "$HOME/Library/Application Support/Godot/export_templates/$VERSION"
+          unzip -q templates.tpz -d unpack
+          cp unpack/templates/* "$HOME/Library/Application Support/Godot/export_templates/$VERSION/"
+      - name: Import and smoke test game
+        run: |
+          "$GODOT" --headless --path godot --editor --import --quit
+          "$GODOT" --headless --path godot --quit-after 5 > game.log 2>&1
+          cat game.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Parser Error|Failed to load script|Invalid call' game.log; then exit 1; fi
+      - name: Export and verify content pack
+        run: |
+          mkdir -p dist
+          "$GODOT" --headless --path godot --export-pack macOS "$GITHUB_WORKSPACE/dist/ACE Adventures Game.pck"
+          test -s dist/ACE\ Adventures\ Game.pck
+          shasum -a 256 "dist/ACE Adventures Game.pck" | awk '{print $1}' > dist/hash.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Validated Game Pack
+          path: |
+            dist/ACE Adventures Game.pck
+            dist/hash.txt
+      - name: Publish immutable pack release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GAME_VERSION: ${{ inputs.version }}
+        run: |
+          if gh release view "game-v$GAME_VERSION" >/dev/null 2>&1; then
+            echo "Game version already exists"; exit 1
+          fi
+          gh release create "game-v$GAME_VERSION" "dist/ACE Adventures Game.pck" --title "ACE Adventures Game v$GAME_VERSION" --notes "Verified game content for the permanent launcher."
+      - name: Publish game version manifest
+        if: ${{ inputs.publish }}
+        env:
+          GAME_VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import os,json
+          from pathlib import Path
+          v=os.environ['GAME_VERSION']
+          h=Path("dist/hash.txt").read_text().strip()
+          obj={"version":v,"url":f"https://github.com/LGBerlin/ACE-Adventures/releases/download/game-v{v}/ACE%20Adventures%20Game.pck","sha256":h}
+          Path("game-update.json").write_text(json.dumps(obj,indent=2)+"\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game-update.json
+          git diff --cached --quiet || git commit -m "Publish game pack manifest v$GAME_VERSION"
+          git pull --rebase origin main
+          git push origin HEAD:main
