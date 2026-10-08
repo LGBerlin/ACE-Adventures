@@ -1,7 +1,7 @@
 extends Node
 # Native app updates for exported macOS builds; user:// saves are untouched.
 const API := "https://api.github.com/repos/LGBerlin/ACE-Adventures/releases/latest"
-const VERSION := "0.3.1"
+const VERSION := "0.3.2"
 var available: Dictionary = {}
 
 func _newer(tag: String) -> bool:
