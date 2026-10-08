@@ -49,11 +49,15 @@ var scene_root: Control
 var dice_dialog: AcceptDialog
 var pending: Dictionary = {}
 var log_text: RichTextLabel
+var update_manager: Node
+var update_status: Label
 
 func _ready() -> void:
 	rng.randomize()
 	_load_state()
 	_load_library()
+	update_manager = preload("res://updater.gd").new()
+	add_child(update_manager)
 	_build()
 
 func _load_state() -> void:
@@ -71,6 +75,16 @@ func _save_state() -> void:
 		return
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	f.store_string(JSON.stringify(state, "\t"))
+
+func _check_updates() -> void:
+	update_status.text = "Checking GitHub Releases..."
+	var response: Dictionary = await update_manager.check_update()
+	update_status.text = str(response.get("message", response.get("error", "Unknown update status")))
+
+func _install_updates() -> void:
+	update_status.text = "Downloading verified update. Do not close the game..."
+	var response: Dictionary = await update_manager.install_update()
+	update_status.text = str(response.get("message", response.get("error", "Update failed")))
 
 func _fresh_state() -> Dictionary:
 	return {"character": {}, "history": [], "location": "Ironwood Crossing", "enemy_hp": 0}
@@ -215,6 +229,12 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 12)
 	scene_root.add_child(root)
 	root.add_child(_label("⚔  ACE ADVENTURES  ·  THE D20 CHRONICLES", 26))
+	var toolbar := HBoxContainer.new()
+	root.add_child(toolbar)
+	toolbar.add_child(_button("CHECK FOR UPDATES", _check_updates))
+	toolbar.add_child(_button("INSTALL UPDATE", _install_updates))
+	update_status = _label("Game v0.3.0 · Campaigns are saved separately from app updates.", 12)
+	toolbar.add_child(update_status)
 	if active_campaign.is_empty():
 		_build_library(root)
 	elif state.character.is_empty():
