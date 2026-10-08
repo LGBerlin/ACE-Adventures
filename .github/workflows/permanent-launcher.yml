@@ -1,0 +1,82 @@
+name: Build and Validate Permanent Launcher
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'launcher/**'
+      - 'godot/**'
+      - '.github/workflows/permanent-launcher.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: permanent-launcher-validation
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and export templates
+        run: |
+          brew install --cask godot
+          GODOT_APP="$(find /Applications -maxdepth 2 -name 'Godot*.app' -print -quit)"
+          test -n "$GODOT_APP"
+          echo "GODOT=$GODOT_APP/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+          RAW=$("$GODOT_APP/Contents/MacOS/Godot" --headless --version)
+          VERSION=${RAW%%.official*}
+          RELEASE_TAG=${VERSION/.stable/-stable}
+          curl -fL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/$RELEASE_TAG/Godot_v${RELEASE_TAG}_export_templates.tpz"
+          mkdir -p "$HOME/Library/Application Support/Godot/export_templates/$VERSION"
+          unzip -q templates.tpz -d unpacked
+          cp unpacked/templates/* "$HOME/Library/Application Support/Godot/export_templates/$VERSION/"
+
+      - name: Import and compile game
+        run: |
+          "$GODOT" --headless --path godot --editor --import --quit
+          "$GODOT" --headless --path godot --quit-after 5 > game.log 2>&1
+          cat game.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Parser Error|Failed to load script|Invalid call' game.log; then exit 1; fi
+
+      - name: Build base game pack
+        run: |
+          mkdir -p dist
+          "$GODOT" --headless --path godot --export-pack macOS "$GITHUB_WORKSPACE/dist/base-game.pck"
+          test -s dist/base-game.pck
+
+      - name: Assemble isolated stable launcher project
+        run: |
+          mkdir -p launcher-build/launcher
+          cp launcher/project.godot launcher/export_presets.cfg launcher-build/
+          cp launcher/*.gd launcher/*.tscn launcher-build/launcher/
+          cp dist/base-game.pck launcher-build/base-game.pck
+          "$GODOT" --headless --path launcher-build --editor --import --quit
+
+      - name: Test launcher starts bundled game
+        run: |
+          "$GODOT" --headless --path launcher-build --quit-after 12 > launcher.log 2>&1
+          cat launcher.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Parser Error|Failed to load script|Invalid call|Bundled game content is missing|Unable to start game' launcher.log; then exit 1; fi
+
+      - name: Export standalone Mac application
+        run: |
+          "$GODOT" --headless --path launcher-build --export-release macOS "$GITHUB_WORKSPACE/dist/ACE Adventures.app"
+          test -d "dist/ACE Adventures.app/Contents/MacOS"
+          mkdir -p "dist/ACE Adventures.app/Contents/Resources"
+          cp dist/base-game.pck "dist/ACE Adventures.app/Contents/Resources/base-game.pck"
+          test -s "dist/ACE Adventures.app/Contents/Resources/base-game.pck"
+          cd dist
+          ditto -c -k --keepParent "ACE Adventures.app" "ACE Adventures Permanent Launcher.zip"
+          shasum -a 256 "ACE Adventures Permanent Launcher.zip" > "ACE Adventures Permanent Launcher.zip.sha256"
+
+      - name: Upload validated test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Permanent Launcher Test Build
+          path: |
+            dist/ACE Adventures Permanent Launcher.zip
+            dist/ACE Adventures Permanent Launcher.zip.sha256
