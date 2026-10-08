@@ -6,6 +6,9 @@ config/name="ACE Adventures"
 run/main_scene="res://launcher/bootstrap.tscn"
 config/features=PackedStringArray("4.0", "GL Compatibility")
 
+[autoload]
+PackUpdater="*res://launcher/pack_updater.gd"
+
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=800
