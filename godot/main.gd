@@ -49,7 +49,7 @@ var scene_root: Control
 var dice_dialog: AcceptDialog
 var pending: Dictionary = {}
 var log_text: RichTextLabel
-var update_manager: Node
+var update_manager
 var update_status: Label
 
 func _ready() -> void:
