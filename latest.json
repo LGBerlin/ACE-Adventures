@@ -1,0 +1,5 @@
+{
+  "version": "0.1.0",
+  "notes": "Initial standalone Mac app. Later releases will install using the in-app Update button.",
+  "files": []
+}
