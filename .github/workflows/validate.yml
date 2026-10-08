@@ -1,0 +1,57 @@
+name: Validate ACE Adventures Changes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'godot/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ace-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot
+        run: |
+          brew install --cask godot
+          GODOT_APP="$(find /Applications -maxdepth 2 -name 'Godot*.app' -print -quit)"
+          test -n "$GODOT_APP"
+          echo "GODOT=$GODOT_APP/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+      - name: Validate project imports
+        run: |
+          "$GODOT" --headless --path godot --editor --import --quit
+      - name: Run headless game smoke test
+        run: |
+          "$GODOT" --headless --path godot --quit-after 5 > game-log.txt 2>&1 || {
+            cat game-log.txt
+            exit 1
+          }
+          if grep -E 'SCRIPT ERROR|Parse Error|Parser Error|Failed to load script|Invalid call' game-log.txt; then
+            cat game-log.txt
+            exit 1
+          fi
+          cat game-log.txt
+      - name: Verify save isolation and update metadata
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          src = Path("godot/main.gd").read_text()
+          updater = Path("godot/updater.gd").read_text()
+          sprite = Path("godot/sprite_factory.gd").read_text()
+          assert 'campaign_library.json' in src
+          assert 'func _exit_campaign()' in src
+          assert 'sprite_factory.gd' in src
+          assert 'sprite_seed' in sprite
+          assert 'FileAccess.get_sha256' in updater
+          assert re.search(r'const VERSION := "([0-9]+\\.){2}[0-9]+"', updater)
+          print("Project invariants validated.")
+          PY
