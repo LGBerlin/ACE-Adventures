@@ -22,16 +22,17 @@ func _request(url: String, download: String = "") -> Array:
 	var error := http.request(url, ["User-Agent: ACE-Adventures", "Accept: application/vnd.github+json"])
 	if error != OK:
 		http.queue_free()
-		return [false, PackedByteArray()]
+		return [false, PackedByteArray(), error, -1]
 	var response: Array = await http.request_completed
 	http.queue_free()
-	return [int(response[0]) == HTTPRequest.RESULT_SUCCESS and int(response[1]) == 200, response[3]]
+	return [int(response[0]) == HTTPRequest.RESULT_SUCCESS and int(response[1]) == 200, response[3], response[0], response[1]]
 
 func check_update() -> Dictionary:
 	if not OS.has_feature("macos") or OS.has_feature("editor"):
 		return {"error": "Updates require the installed macOS application."}
 	var result := await _request(API)
-	if not result[0]: return {"error": "GitHub release check failed."}
+	if not result[0]:
+		return {"error": "GitHub release check failed (network result %s, HTTP %s). If HTTP 404: the release has not been published yet." % [result[2], result[3]]}
 	var release = JSON.parse_string(result[1].get_string_from_utf8())
 	if not release is Dictionary: return {"error": "Invalid GitHub response."}
 	var tag := str(release.get("tag_name", ""))
@@ -57,7 +58,7 @@ func install_update() -> Dictionary:
 	if not app.ends_with(".app"): return {"error": "Invalid application path."}
 	var zip := ProjectSettings.globalize_path("user://ACE Adventures update.zip")
 	var result := await _request(str(available["url"]), zip)
-	if not result[0]: return {"error": "Download failed."}
+	if not result[0]: return {"error": "Download failed (network result %s, HTTP %s)." % [result[2], result[3]]}
 	if FileAccess.get_sha256(zip).to_lower() != str(available["hash"]).to_lower():
 		DirAccess.remove_absolute(zip)
 		return {"error": "Checksum mismatch. Update refused."}
