@@ -1,14 +1,50 @@
 extends Control
-# Stable Godot launcher prototype. This script is intended to be bundled
-# inside the permanent application, and must not be overridden by game packs.
-const PACK_PATH := "user://updates/active-game.pck"
+# Launcher logic remains bundled with the Mac application, outside game update packs.
+const BASE_PACK := "res://base-game.pck"
+const ACTIVE_PACK := "user://updates/active-game.pck"
+const PREVIOUS_PACK := "user://updates/previous-game.pck"
 const GAME_SCENE := "res://main.tscn"
+var updater: Node
 
 func _ready() -> void:
-	var active_path := ProjectSettings.globalize_path(PACK_PATH)
-	if FileAccess.file_exists(PACK_PATH):
-		if not ProjectSettings.load_resource_pack(active_path, true):
-			push_warning("Unable to load installed game content; using bundled fallback")
-	var error := get_tree().change_scene_to_file(GAME_SCENE)
+	updater = preload("res://launcher/pack_updater.gd").new()
+	add_child(updater)
+	# A base copy of the game is bundled; external content can override it.
+	if not ProjectSettings.load_resource_pack(BASE_PACK, true):
+		_show_problem("Bundled game content is missing.")
+		return
+	if FileAccess.file_exists(ACTIVE_PACK):
+		if not ProjectSettings.load_resource_pack(ProjectSettings.globalize_path(ACTIVE_PACK), true):
+			_rollback()
+			_show_problem("Last update could not be loaded. Restored backup; restart the game.")
+			return
+	var scene = load(GAME_SCENE)
+	if scene == null or not scene is PackedScene:
+		_rollback()
+		_show_problem("Game scene is invalid. Previous version restored. Restart to retry.")
+		return
+	var error := get_tree().change_scene_to_packed(scene)
 	if error != OK:
-		push_error("Unable to launch ACE Adventures game scene")
+		_rollback()
+		_show_problem("Unable to start game. Previous version restored; restart.")
+
+func _rollback() -> void:
+	var active := ProjectSettings.globalize_path(ACTIVE_PACK)
+	var prior := ProjectSettings.globalize_path(PREVIOUS_PACK)
+	if FileAccess.file_exists(ACTIVE_PACK):
+		DirAccess.remove_absolute(active)
+	if FileAccess.file_exists(PREVIOUS_PACK):
+		DirAccess.rename_absolute(prior, active)
+	# Rollback must also reverse update metadata, handled in next validation stage.
+
+func _show_problem(message: String) -> void:
+	var box := VBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	add_child(box)
+	var label := Label.new()
+	label.text = message
+	box.add_child(label)
+	var button := Button.new()
+	button.text = "Close"
+	button.pressed.connect(func(): get_tree().quit())
+	box.add_child(button)
