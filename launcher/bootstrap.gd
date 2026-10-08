@@ -4,11 +4,8 @@ const BASE_PACK := "res://base-game.pck"
 const ACTIVE_PACK := "user://updates/active-game.pck"
 const PREVIOUS_PACK := "user://updates/previous-game.pck"
 const GAME_SCENE := "res://main.tscn"
-var updater: Node
 
 func _ready() -> void:
-	updater = preload("res://launcher/pack_updater.gd").new()
-	add_child(updater)
 	# A base copy of the game is bundled; external content can override it.
 	if not ProjectSettings.load_resource_pack(BASE_PACK, true):
 		_show_problem("Bundled game content is missing.")
