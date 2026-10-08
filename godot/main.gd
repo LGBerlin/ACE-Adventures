@@ -136,12 +136,12 @@ func _build_creation(root: VBoxContainer) -> void:
 	selected_class = ""
 	class_buttons.clear()
 	for cl in CLASSES:
-		var class_name: String = str(cl)
-		var b := _button(class_name, func(): _select_class(class_name))
+		var class_id: String = str(cl)
+		var b := _button(class_id, func(): _select_class(class_id))
 		b.toggle_mode = true
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		class_row.add_child(b)
-		class_buttons[class_name] = b
+		class_buttons[class_id] = b
 	status = _label("")
 	pane.add_child(status)
 	pane.add_child(_button("ROLL MY CHARACTER — PERMANENT", _roll_character))
