@@ -33,7 +33,7 @@ jobs:
       - name: Build standalone windowed app
         run: |
           cd v2
-          pyinstaller --noconfirm --clean --windowed --name "ACE Adventures 2" app.py
+          pyinstaller --noconfirm --clean --windowed --name "ACE Adventures 2" --hidden-import app --hidden-import game --hidden-import pixel_art bootstrap.py
           test -d "dist/ACE Adventures 2.app/Contents/MacOS"
       - name: Validate packaged executable
         run: |
