@@ -2,11 +2,10 @@ name: Build ACE Adventures macOS App
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'godot/**'
-      - '.github/workflows/mac-app.yml'
+
+concurrency:
+  group: ace-adventures-macos-release
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -77,4 +76,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add godot-update.json
           git commit -m "Publish verified v0.3.3 game update metadata"
+          git pull --rebase origin main
           git push origin HEAD:main
