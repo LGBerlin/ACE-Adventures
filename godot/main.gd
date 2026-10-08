@@ -157,7 +157,7 @@ func _roll_character() -> void:
 	if nm.length() < 1 or nm.length() > 32:
 		status.text = "Enter a name (1–32 characters)."
 		return
-	var cl := CLASSES[class_choice.selected]
+	var cl: String = str(CLASSES[class_choice.selected])
 	var paths: Array = PATHS[cl]
 	var weights := []
 	match cl:
@@ -165,7 +165,7 @@ func _roll_character() -> void:
 		"Mage": weights = [45, 30, 18, 7]
 		"Fighter": weights = [25, 25, 24, 18, 8]
 		"Vessel": weights = [28, 25, 23, 18, 6]
-	var path := _weighted(paths, weights)
+	var path: String = _weighted(paths, weights)
 	var magic := "None"
 	if cl == "Mage" or path == "Arcane Trickster":
 		magic = _weighted(AFFINITIES, [9, 9, 9, 8, 8, 7, 7, 7, 7, 7, 7, 5, 5, 5])
