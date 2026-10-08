@@ -1,5 +1,11 @@
 {
-  "version": "0.1.0",
-  "notes": "Initial standalone Mac app. Later releases will install using the in-app Update button.",
-  "files": []
+  "version": "0.2.0",
+  "notes": "Retro pixel RPG interface; permanent one-spin character creation (name, age, class); weighted paths and magic; separate skills/moves; procedural sprite and map; free-text D20 actions, Ollama narration, combat and shops.",
+  "files": [
+    {
+      "path": "adventures.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/updates/0.2.0/adventures.py",
+      "sha256": "dfa912be49a7fa0cdc3392aa48ae168adb608ef9fbae6f15dfae36442dd59250"
+    }
+  ]
 }
