@@ -352,7 +352,7 @@ func _build() -> void:
 	var install_button := _button("INSTALL UPDATE", _install_updates)
 	install_button.custom_minimum_size.x = 170
 	toolbar.add_child(install_button)
-	update_status = _label("Game v0.3.2 · Campaigns are saved separately from app updates.", 12)
+	update_status = _label("Game v0.3.3 · Campaigns are saved separately from app updates.", 12)
 	update_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	update_area.add_child(update_status)
 	if active_campaign.is_empty():
