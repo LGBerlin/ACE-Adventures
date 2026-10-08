@@ -1,6 +1,6 @@
 extends Node
 # Native app updates for exported macOS builds; user:// saves are untouched.
-const API := "https://api.github.com/repos/LGBerlin/ACE-Adventures/releases/latest"
+const MANIFEST := "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/godot-update.json"
 const VERSION := "0.3.2"
 var available: Dictionary = {}
 
@@ -30,23 +30,23 @@ func _request(url: String, download: String = "") -> Array:
 func check_update() -> Dictionary:
 	if not OS.has_feature("macos") or OS.has_feature("editor"):
 		return {"error": "Updates require the installed macOS application."}
-	var result := await _request(API)
+	var result := await _request(MANIFEST)
 	if not result[0]:
 		return {"error": "GitHub release check failed (network result %s, HTTP %s). If HTTP 404: the release has not been published yet." % [result[2], result[3]]}
 	var release = JSON.parse_string(result[1].get_string_from_utf8())
-	if not release is Dictionary: return {"error": "Invalid GitHub response."}
-	var tag := str(release.get("tag_name", ""))
+	if not release is Dictionary: return {"error": "Invalid version manifest."}
+	var tag := str(release.get("version", ""))
 	if not _newer(tag):
 		available = {}
 		return {"message": "Already up to date (v" + VERSION + ")."}
-	for item in release.get("assets", []):
-		if str(item.get("name", "")) == "ACE Adventures Mac.zip":
-			var digest := str(item.get("digest", ""))
-			if not digest.begins_with("sha256:") or digest.length() != 71:
-				return {"error": "Release has no SHA-256 digest."}
-			available = {"tag": tag, "url": str(item["browser_download_url"]), "hash": digest.substr(7)}
-			return {"message": tag + " available. Click Install Update."}
-	return {"error": "No Mac build in the latest release."}
+	var url := str(release.get("url", ""))
+	var digest := str(release.get("sha256", "")).to_lower()
+	if not url.begins_with("https://github.com/LGBerlin/ACE-Adventures/releases/download/"):
+		return {"error": "Untrusted update URL."}
+	if digest.length() != 64 or not digest.is_valid_hex_number(false):
+		return {"error": "Missing or invalid SHA-256 digest."}
+	available = {"tag": tag, "url": url, "hash": digest}
+	return {"message": tag + " available. Click Install Update."}
 
 func install_update() -> Dictionary:
 	if available.is_empty(): return {"error": "Check for updates first."}
