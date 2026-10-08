@@ -1,6 +1,7 @@
 extends Control
 # First native Godot interface prototype. Not the final rules engine.
 const SAVE_PATH := "user://ace_adventures_godot.json"
+const LIBRARY_PATH := "user://campaign_library.json"
 const CLASSES := ["Rogue", "Mage", "Fighter", "Vessel"]
 const PATHS := {
 	"Rogue": ["Thief", "Ranger", "Assassin", "Arcane Trickster"],
@@ -32,6 +33,10 @@ const COLORS := {
 }
 var rng := RandomNumberGenerator.new()
 var state: Dictionary = {}
+var library: Dictionary = {"campaigns": {}}
+var active_campaign: String = ""
+var campaign_title_input: LineEdit
+var campaign_party_input: SpinBox
 var name_input: LineEdit
 var age_input: SpinBox
 var selected_class: String = ""
@@ -47,6 +52,7 @@ var log_text: RichTextLabel
 func _ready() -> void:
 	rng.randomize()
 	_load_state()
+	_load_library()
 	_build()
 
 func _load_state() -> void:
@@ -59,8 +65,100 @@ func _load_state() -> void:
 		state = {"character": {}, "history": [], "location": "Ironwood Crossing", "enemy_hp": 0}
 
 func _save_state() -> void:
+	_store_campaign()
+	if active_campaign.is_empty():
+		return
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	f.store_string(JSON.stringify(state, "\t"))
+
+func _fresh_state() -> Dictionary:
+	return {"character": {}, "history": [], "location": "Ironwood Crossing", "enemy_hp": 0}
+
+func _load_library() -> void:
+	if FileAccess.file_exists(LIBRARY_PATH):
+		var file := FileAccess.open(LIBRARY_PATH, FileAccess.READ)
+		var parsed = JSON.parse_string(file.get_as_text())
+		if parsed is Dictionary and parsed.has("campaigns") and parsed["campaigns"] is Dictionary:
+			library = parsed
+	if library["campaigns"].is_empty() and FileAccess.file_exists(SAVE_PATH):
+		var migrated_id := "legacy"
+		library["campaigns"][migrated_id] = {
+			"title": "Original Adventure", "players": 1,
+			"state": state.duplicate(true)
+		}
+		_write_library()
+	state = _fresh_state()
+
+func _write_library() -> void:
+	var tmp := LIBRARY_PATH + ".tmp"
+	var file := FileAccess.open(tmp, FileAccess.WRITE)
+	if file == null:
+		push_error("Could not save campaign library")
+		return
+	file.store_string(JSON.stringify(library, "\t"))
+	file.close()
+	DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp), ProjectSettings.globalize_path(LIBRARY_PATH))
+
+func _store_campaign() -> void:
+	if active_campaign.is_empty():
+		return
+	if library["campaigns"].has(active_campaign):
+		library["campaigns"][active_campaign]["state"] = state.duplicate(true)
+		_write_library()
+
+func _create_campaign() -> void:
+	var title := campaign_title_input.text.strip_edges()
+	if title.is_empty() or title.length() > 60:
+		status.text = "Enter a campaign name (1–60 characters)."
+		return
+	var id := str(Time.get_unix_time_from_system()).replace(".", "_") + "_" + str(rng.randi_range(10000, 99999))
+	var players := int(campaign_party_input.value)
+	library["campaigns"][id] = {"title": title, "players": players, "state": _fresh_state()}
+	_write_library()
+	_open_campaign(id)
+
+func _open_campaign(id: String) -> void:
+	if not library["campaigns"].has(id):
+		return
+	active_campaign = id
+	state = library["campaigns"][id]["state"].duplicate(true)
+	_build()
+
+func _exit_campaign() -> void:
+	_store_campaign()
+	active_campaign = ""
+	state = _fresh_state()
+	_build()
+
+func _build_library(root: VBoxContainer) -> void:
+	var pane := _panel("Campaign Library")
+	root.add_child(pane.get_parent())
+	pane.add_child(_label("Choose a campaign, or begin a new adventure. Every campaign has its own character and save."))
+	var campaigns: Dictionary = library["campaigns"]
+	for id in campaigns:
+		var campaign: Dictionary = campaigns[id]
+		var saved: Dictionary = campaign.get("state", {})
+		var char_data: Dictionary = saved.get("character", {})
+		var description := str(campaign.get("title", "Untitled"))
+		if not char_data.is_empty():
+			description += "  ·  " + str(char_data.get("name", "Adventurer")) + " / Level " + str(char_data.get("level", 1))
+		else:
+			description += "  ·  Character not created"
+		var campaign_id: String = str(id)
+		pane.add_child(_button("CONTINUE  ·  " + description, func(): _open_campaign(campaign_id)))
+	pane.add_child(_label("NEW CAMPAIGN", 18))
+	campaign_title_input = LineEdit.new()
+	campaign_title_input.placeholder_text = "Campaign name"
+	pane.add_child(campaign_title_input)
+	campaign_party_input = SpinBox.new()
+	campaign_party_input.min_value = 1
+	campaign_party_input.max_value = 8
+	campaign_party_input.value = 1
+	pane.add_child(_label("Number of players (future multiplayer planning)", 12))
+	pane.add_child(campaign_party_input)
+	status = _label("")
+	pane.add_child(status)
+	pane.add_child(_button("CREATE CAMPAIGN", _create_campaign))
 
 func _label(t: String, sz: int = 16) -> Label:
 	var l := Label.new()
@@ -113,12 +211,15 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 12)
 	scene_root.add_child(root)
 	root.add_child(_label("⚔  ACE ADVENTURES  ·  THE D20 CHRONICLES", 26))
-	if state.character.is_empty():
+	if active_campaign.is_empty():
+		_build_library(root)
+	elif state.character.is_empty():
 		_build_creation(root)
 	else:
 		_build_game(root)
 
 func _build_creation(root: VBoxContainer) -> void:
+	root.add_child(_button("← SAVE & RETURN TO CAMPAIGNS", _exit_campaign))
 	var pane := _panel("Character Roulette — One permanent roll")
 	root.add_child(pane.get_parent())
 	pane.add_child(_label("Choose your name, age, and class. All other character traits are random. No rerolls."))
@@ -218,6 +319,7 @@ func _roll_character() -> void:
 	_build()
 
 func _build_game(root: VBoxContainer) -> void:
+	root.add_child(_button("← SAVE & RETURN TO CAMPAIGNS", _exit_campaign))
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(columns)
