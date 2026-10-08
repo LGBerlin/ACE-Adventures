@@ -53,6 +53,18 @@ jobs:
           "$GODOT" --headless --path godot --export-release macOS "$GITHUB_WORKSPACE/build/ACE Adventures.app"
           test -d "build/ACE Adventures.app"
 
+      - name: Smoke-test exported source before publishing
+        run: |
+          "$GODOT" --headless --path godot --quit-after 5 > game-smoke.log 2>&1 || {
+            cat game-smoke.log
+            exit 1
+          }
+          if grep -E 'SCRIPT ERROR|Parse Error|Parser Error|Failed to load script|Invalid call' game-smoke.log; then
+            cat game-smoke.log
+            exit 1
+          fi
+          cat game-smoke.log
+
       - name: Package app and checksum
         run: |
           cd build
