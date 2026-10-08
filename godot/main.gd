@@ -27,6 +27,22 @@ const MOVES := {
 	"Creation": ["Construct", "Materialize", "Form"],
 	"Chaos": ["Mind Jumble", "Randomize", "Unpredictable Strike"]
 }
+const PATH_MOVES := {
+	"Thief": ["Quick Hands", "Pocket Sand", "Nimble Escape"],
+	"Ranger": ["Quick Shot", "Mark Target", "Woodland Step"],
+	"Assassin": ["Backstab", "Silent Step", "Weakpoint"],
+	"Arcane Trickster": ["Minor Mirage", "Phantom Hand", "Illusory Feint"],
+	"Martial Artist": ["Palm Strike", "Counter Stance", "Sweeping Kick"],
+	"Knight": ["Shield Bash", "Guard", "Defensive Advance"],
+	"Swordsman": ["Precision Cut", "Blade Parry", "Riposte"],
+	"Barbarian": ["Wild Swing", "War Cry", "Brutal Charge"],
+	"Paladin": ["Sacred Strike", "Minor Blessing", "Guardian Stance"],
+	"Monk": ["Palm Strike", "Breath Focus", "Spirit Guard"],
+	"Druid": ["Vine Snare", "Seed Spark", "Nature's Touch"],
+	"Spirit Fighter": ["Soul Jab", "Spirit Ward", "Echo Step"],
+	"Warden": ["Guardian Step", "Root Guard", "Staff Sweep"],
+	"Oracle Vessel": ["Omen Glimpse", "Fate Nudge", "Whisper Ward"]
+}
 const COLORS := {
 	"background": Color("#25201c"), "panel": Color("#494137"),
 	"border": Color("#b99864"), "ink": Color("#f2e4c6"),
@@ -446,9 +462,7 @@ func _roll_character() -> void:
 		"Mage": hp -= 5; mana += 12
 		"Fighter": hp += 9; mana -= 7
 		"Vessel": hp += 3; mana += 3
-	var moves: Array = MOVES.get(magic, [])
-	if moves.is_empty():
-		moves = [path + " Strike", "Guard", "Quick Step"]
+	var moves: Array = MOVES.get(magic, []) if cl == "Mage" else PATH_MOVES.get(path, [])
 	state.character = {
 		"name": nm, "age": int(age_input.value), "class": cl, "path": path,
 		"magic": magic, "race": race, "level": 1, "xp": 0,
