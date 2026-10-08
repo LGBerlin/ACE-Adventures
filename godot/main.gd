@@ -69,19 +69,16 @@ func _label(t: String, sz: int = 16) -> Label:
 	return l
 
 func _panel(title: String) -> VBoxContainer:
-	var outer := VBoxContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = COLORS.panel
 	style.border_color = COLORS.border
 	style.set_border_width_all(4)
 	style.set_content_margin_all(12)
-	outer.add_theme_stylebox_override("panel", style)
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", style)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 9)
 	p.add_child(content)
-	outer.add_child(p)
 	content.add_child(_label(title.to_upper(), 19))
 	return content
 
