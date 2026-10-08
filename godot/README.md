@@ -1,28 +1,28 @@
-# ACE Adventures — Godot graphical prototype
+# ACE Adventures — Godot macOS game
 
-This folder is an **independent Godot project** intended for Godot 4.x, including the user's installed 4.7.2.
+## Current development build: v0.3.0
 
-## Opening it
-1. Launch **Godot**.
-2. Click **Import**.
-3. Select the `godot/project.godot` file.
-4. Click **Import & Edit**, then **Run Project** (F6 or F5 as appropriate).
+### Campaign Library
+- Opens to the Campaign Library when launched.
+- Create a campaign with a name and planned player count (1–8).
+- Continue any saved campaign, or start a new one with an independent character.
+- Save & Return to the library from character creation or gameplay.
+- Character creation is permanent per campaign: name, age, class chosen; path, affinity, race, stats and equipment randomised.
+- Previous single-character Godot saves are copied into **Original Adventure** on first launch. Original legacy save remains in place.
 
-No extra assets or downloaded AI models are required to open this first project.
+Campaigns are saved in Godot user data under `user://campaign_library.json`, not inside the application bundle.
 
-## Implemented in this first Godot source version
-- Native game-engine window with retro panel colours and a character sheet structure.
-- Name, age, and class are the only user-selected character generation inputs.
-- One-time character roll persisted in `user://ace_adventures_godot.json`.
-- Class paths, rarities, magic affinities, stats, starting items, moves and skills.
-- Separate skills and moves panels.
-- Free-text action input and a D20 popup with modifiers, DCs and outcome grades.
+### macOS in-app updates
+- Buttons on the main screen: **CHECK FOR UPDATES** and **INSTALL UPDATE**.
+- The app queries the latest release from the repository's GitHub Releases.
+- It downloads `ACE Adventures Mac.zip`, checks the release asset SHA-256 digest, and launches an external installer that waits for the app to exit.
+- The previous app is retained beside the new version as `ACE Adventures.app.previous` for rollback.
+- Campaign files in `user://` are not replaced.
 
-## Not implemented yet
-- This is a source project, **not an in-app update for the existing Mac .app**. The existing updater only accepts a Python payload; native Godot bundles need a new signed/versioned distribution path.
-- Ollama, Draw Things, and LibreSprite aren't connected yet.
-- The sprite panel is deliberately marked as a placeholder.
-- Combat and action interpretation use simple heuristics; damage, tactical positioning, world persistence and quests will follow after core UI review.
-- Custom fonts and production sprite sheets are not bundled.
+### First-time installation
+GitHub Actions **Build ACE Adventures macOS App** publishes version `v0.3.0` as a GitHub Release after successfully building. Download the Mac ZIP from that release, unzip, and move ACE Adventures.app into Applications. The original Python app is **not** the Godot game.
 
-Character data from the old Python version does not automatically migrate here. Do not delete the old Mac app or its saves.
+**Important:** This build is not Apple-notarized and may be blocked by Gatekeeper. The workflow must pass and the app/updater must be tested on macOS before the release can be considered validated.
+
+## Remaining work
+The image AI, real playable tile map, sprite animation, sophisticated action interpretation, and multiplayer are not connected yet. The player-count selector is groundwork, not active multiplayer.
