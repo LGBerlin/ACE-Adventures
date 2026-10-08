@@ -6,6 +6,7 @@ const ACTIVE := UPDATE_DIR + "active-game.pck"
 const BACKUP := UPDATE_DIR + "previous-game.pck"
 const STAGING := UPDATE_DIR + "staging-game.pck"
 const METADATA := UPDATE_DIR + "installed.json"
+const META_BACKUP := UPDATE_DIR + "previous-installed.json"
 var remote: Dictionary = {}
 
 func _ready() -> void:
@@ -88,6 +89,10 @@ func download_and_stage() -> Dictionary:
 	var staged := ProjectSettings.globalize_path(STAGING)
 	if FileAccess.file_exists(BACKUP):
 		DirAccess.remove_absolute(backup)
+	if FileAccess.file_exists(META_BACKUP):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(META_BACKUP))
+	if FileAccess.file_exists(METADATA):
+		DirAccess.copy_absolute(ProjectSettings.globalize_path(METADATA), ProjectSettings.globalize_path(META_BACKUP))
 	if FileAccess.file_exists(ACTIVE):
 		if DirAccess.rename_absolute(active, backup) != OK:
 			return {"error": "Could not create rollback backup"}
