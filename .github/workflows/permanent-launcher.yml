@@ -8,9 +8,14 @@ on:
       - 'godot/**'
       - '.github/workflows/permanent-launcher.yml'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish validated permanent launcher v0.5.0
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: permanent-launcher-validation
@@ -73,6 +78,15 @@ jobs:
           ditto -c -k --keepParent "ACE Adventures.app" "ACE Adventures Permanent Launcher.zip"
           shasum -a 256 "ACE Adventures Permanent Launcher.zip" > "ACE Adventures Permanent Launcher.zip.sha256"
 
+      - name: Smoke test the actual exported Mac application
+        run: |
+          "dist/ACE Adventures.app/Contents/MacOS/ACE Adventures" --headless --quit-after 10 > exported.log 2>&1 || {
+            cat exported.log
+            exit 1
+          }
+          cat exported.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Parser Error|Failed to load script|Invalid call|Bundled game content is missing|Unable to start game' exported.log; then exit 1; fi
+
       - name: Upload validated test build
         uses: actions/upload-artifact@v4
         with:
@@ -80,3 +94,18 @@ jobs:
           path: |
             dist/ACE Adventures Permanent Launcher.zip
             dist/ACE Adventures Permanent Launcher.zip.sha256
+
+      - name: Publish launcher once
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view launcher-v0.5.0 >/dev/null 2>&1; then
+            echo "Launcher release already exists; refusing overwrite"
+            exit 1
+          fi
+          gh release create launcher-v0.5.0 \
+            "dist/ACE Adventures Permanent Launcher.zip" \
+            "dist/ACE Adventures Permanent Launcher.zip.sha256" \
+            --title "ACE Adventures Permanent Launcher v0.5.0" \
+            --notes "Permanent Mac launcher for independently verified game-pack updates. Initial installation required once."
