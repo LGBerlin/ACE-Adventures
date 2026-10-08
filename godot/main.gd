@@ -2,6 +2,7 @@ extends Control
 # First native Godot interface prototype. Not the final rules engine.
 const SAVE_PATH := "user://ace_adventures_godot.json"
 const LIBRARY_PATH := "user://campaign_library.json"
+const MIGRATION_MARKER := "user://legacy_campaign_imported.marker"
 const CLASSES := ["Rogue", "Mage", "Fighter", "Vessel"]
 const PATHS := {
 	"Rogue": ["Thief", "Ranger", "Assassin", "Arcane Trickster"],
@@ -80,13 +81,16 @@ func _load_library() -> void:
 		var parsed = JSON.parse_string(file.get_as_text())
 		if parsed is Dictionary and parsed.has("campaigns") and parsed["campaigns"] is Dictionary:
 			library = parsed
-	if library["campaigns"].is_empty() and FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(LIBRARY_PATH) and not FileAccess.file_exists(MIGRATION_MARKER) and FileAccess.file_exists(SAVE_PATH):
 		var migrated_id := "legacy"
 		library["campaigns"][migrated_id] = {
 			"title": "Original Adventure", "players": 1,
 			"state": state.duplicate(true)
 		}
 		_write_library()
+		var marker := FileAccess.open(MIGRATION_MARKER, FileAccess.WRITE)
+		if marker != null:
+			marker.store_string("Legacy character imported; original file retained.")
 	state = _fresh_state()
 
 func _write_library() -> void:
