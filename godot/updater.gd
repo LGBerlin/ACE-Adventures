@@ -1,7 +1,7 @@
 extends Node
 # Native app updates for exported macOS builds; user:// saves are untouched.
 const MANIFEST := "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/godot-update.json"
-const VERSION := "0.3.2"
+const VERSION := "0.3.3"
 var available: Dictionary = {}
 
 func _newer(tag: String) -> bool:
