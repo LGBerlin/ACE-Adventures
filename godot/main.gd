@@ -227,12 +227,21 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 12)
 	scene_root.add_child(root)
 	root.add_child(_label("⚔  ACE ADVENTURES  ·  THE D20 CHRONICLES", 26))
+	var update_area := VBoxContainer.new()
+	update_area.add_theme_constant_override("separation", 5)
+	root.add_child(update_area)
 	var toolbar := HBoxContainer.new()
-	root.add_child(toolbar)
-	toolbar.add_child(_button("CHECK FOR UPDATES", _check_updates))
-	toolbar.add_child(_button("INSTALL UPDATE", _install_updates))
+	toolbar.add_theme_constant_override("separation", 10)
+	update_area.add_child(toolbar)
+	var check_button := _button("CHECK FOR UPDATES", _check_updates)
+	check_button.custom_minimum_size.x = 195
+	toolbar.add_child(check_button)
+	var install_button := _button("INSTALL UPDATE", _install_updates)
+	install_button.custom_minimum_size.x = 170
+	toolbar.add_child(install_button)
 	update_status = _label("Game v0.3.0 · Campaigns are saved separately from app updates.", 12)
-	toolbar.add_child(update_status)
+	update_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	update_area.add_child(update_status)
 	if active_campaign.is_empty():
 		_build_library(root)
 	elif state.character.is_empty():
