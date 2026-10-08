@@ -1,0 +1,52 @@
+name: Build ACE Adventures macOS App
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-mac:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          brew install --cask godot
+          GODOT_APP="$(find /Applications -maxdepth 2 -name 'Godot*.app' -print -quit)"
+          test -n "$GODOT_APP"
+          echo "GODOT=$GODOT_APP/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+
+      - name: Show version and obtain matching export templates
+        run: |
+          "$GODOT" --headless --version
+          VERSION=$("$GODOT" --headless --version | sed -E 's/^(4\.[0-9]+(\.[0-9]+)?\.[a-z0-9]+).*/\1/')
+          echo "Detected: $VERSION"
+          curl -fL --retry 3 -o templates.tpz "https://github.com/godotengine/godot/releases/download/$VERSION/Godot_v${VERSION}_export_templates.tpz"
+          mkdir -p "$HOME/Library/Application Support/Godot/export_templates/$VERSION"
+          unzip -q templates.tpz -d template_unpack
+          cp template_unpack/templates/* "$HOME/Library/Application Support/Godot/export_templates/$VERSION/"
+
+      - name: Import and export macOS application
+        run: |
+          mkdir -p build
+          "$GODOT" --headless --path godot --editor --import --quit
+          "$GODOT" --headless --path godot --export-release macOS "$GITHUB_WORKSPACE/build/ACE Adventures.app"
+          test -d "build/ACE Adventures.app"
+
+      - name: Package app and checksum
+        run: |
+          cd build
+          ditto -c -k --keepParent "ACE Adventures.app" "ACE Adventures Mac.zip"
+          shasum -a 256 "ACE Adventures Mac.zip" | awk '{print $1}' > "ACE Adventures Mac.zip.sha256"
+
+      - name: Upload build to workflow run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ACE Adventures Mac Build
+          path: |
+            build/ACE Adventures Mac.zip
+            build/ACE Adventures Mac.zip.sha256
