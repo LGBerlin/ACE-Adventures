@@ -34,6 +34,8 @@ var rng := RandomNumberGenerator.new()
 var state: Dictionary = {}
 var name_input: LineEdit
 var age_input: SpinBox
+var selected_class: String = ""
+var class_buttons: Dictionary = {}
 var class_choice: OptionButton
 var status: Label
 var action_input: TextEdit
@@ -128,13 +130,27 @@ func _build_creation(root: VBoxContainer) -> void:
 	age_input.max_value = 120
 	age_input.value = 20
 	pane.add_child(age_input)
-	class_choice = OptionButton.new()
+	pane.add_child(_label("SELECT YOUR CLASS", 18))
+	var class_row := HBoxContainer.new()
+	pane.add_child(class_row)
+	selected_class = ""
+	class_buttons.clear()
 	for cl in CLASSES:
-		class_choice.add_item(cl)
-	pane.add_child(class_choice)
+		var class_name: String = str(cl)
+		var b := _button(class_name, func(): _select_class(class_name))
+		b.toggle_mode = true
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		class_row.add_child(b)
+		class_buttons[class_name] = b
 	status = _label("")
 	pane.add_child(status)
 	pane.add_child(_button("ROLL MY CHARACTER — PERMANENT", _roll_character))
+
+func _select_class(cl: String) -> void:
+	selected_class = cl
+	for key in class_buttons:
+		class_buttons[key].button_pressed = (key == cl)
+	status.text = "SELECTED CLASS: " + cl
 
 func _weighted(options: Array, weights: Array) -> String:
 	var total := 0
@@ -154,7 +170,10 @@ func _roll_character() -> void:
 	if nm.length() < 1 or nm.length() > 32:
 		status.text = "Enter a name (1–32 characters)."
 		return
-	var cl: String = str(CLASSES[class_choice.selected])
+	if selected_class.is_empty():
+		status.text = "Select Rogue, Mage, Fighter, or Vessel first."
+		return
+	var cl: String = selected_class
 	var paths: Array = PATHS[cl]
 	var weights := []
 	match cl:
@@ -216,14 +235,32 @@ func _build_game(root: VBoxContainer) -> void:
 	var c: Dictionary = state.character
 	var identity := _panel("Character sheet")
 	left.add_child(identity.get_parent())
-	for line in ["%s · Age %s" % [c.name, c.age], "Level %s · %s %s" % [c.level, c.race, c["class"]], "HP %s/%s  ·  Mana %s/%s" % [c.hp, c.max_hp, c.mana, c.max_mana]]:
-		identity.add_child(_label(line))
+	var identity_grid := GridContainer.new()
+	identity_grid.columns = 2
+	identity.add_child(identity_grid)
+	for pair in [
+		["NAME", c.name], ["AGE", c.age], ["CLASS", c["class"]],
+		["RACE", c.race], ["LEVEL", c.level], ["PATH", c.path],
+		["MAGIC / AFFINITY", c.magic], ["EXPERIENCE", c.xp]
+	]:
+		var value_box := VBoxContainer.new()
+		value_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		value_box.custom_minimum_size.x = 118
+		value_box.add_child(_label(str(pair[0]), 12))
+		value_box.add_child(_label(str(pair[1]), 16))
+		identity_grid.add_child(value_box)
+	identity.add_child(_label("HP %s/%s   ·   MANA %s/%s" % [c.hp, c.max_hp, c.mana, c.max_mana]))
 	for attribute in c.abilities:
 		identity.add_child(_label("%s  %s" % [attribute, c.abilities[attribute]]))
 	var skills := _panel("Skills — checks")
 	left.add_child(skills.get_parent())
 	for skill in c.skills:
 		skills.add_child(_label("• " + str(skill)))
+	if OS.has_feature("editor"):
+		var test_panel := _panel("Development tools")
+		left.add_child(test_panel.get_parent())
+		test_panel.add_child(_label("Testing only — not a gameplay reroll.", 12))
+		test_panel.add_child(_button("RESET TEST CHARACTER", _reset_test_character))
 	var encounter := _panel("Exploration & battle")
 	mid.add_child(encounter.get_parent())
 	encounter.add_child(_label("IRONWOOD CROSSING"))
@@ -265,6 +302,13 @@ func _build_game(root: VBoxContainer) -> void:
 	inventory.add_child(_label("Gold: " + str(c.gold)))
 	for passive in c.passives:
 		inventory.add_child(_label("Passive: " + str(passive)))
+
+func _reset_test_character() -> void:
+	if not OS.has_feature("editor"):
+		return
+	state = {"character": {}, "history": [], "location": "Ironwood Crossing", "enemy_hp": 0}
+	_save_state()
+	_build()
 
 func _spawn_enemy() -> void:
 	if state.enemy_hp <= 0:
