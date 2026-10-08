@@ -7,6 +7,7 @@ from tkinter import ttk,messagebox
 from game import new_campaign,create_character,save_campaign,list_campaigns,roll_d20
 from updater import activate,load_active
 from urllib.request import urlopen,Request
+from pixel_art import forest,character,d20
 
 APP_ROOT=Path.home()/"Library"/"Application Support"/"ACE Adventures 2"
 BACKGROUND="#211b1a";PANEL="#3b3028";GOLD="#d9b982";INK="#f0e5cd";BUTTON="#67513b"
@@ -61,8 +62,10 @@ class App(tk.Tk):
         for id,c in entries:
             name=c.get("title","Untitled")
             self.button(side,name,lambda cid=id:self.open_campaign(cid)).pack(fill="x",padx=12,pady=4)
+        art=tk.Canvas(detail,width=720,height=260,highlightthickness=3,highlightbackground=GOLD)
+        art.pack(fill="x",padx=22,pady=(14,16));forest(art)
         if entries:
-            id,c=entries[-1];self.label(detail,c.get("title","Untitled"),22).pack(padx=20,pady=40)
+            id,c=entries[-1];self.label(detail,c.get("title","Untitled"),22).pack(padx=20,pady=10)
             hero=c.get("character")
             self.label(detail,hero["name"]+" · Level "+str(hero["level"])+" · "+hero["path"] if hero else "Character not yet generated",14).pack(padx=20,pady=12)
             self.button(detail,"CONTINUE ADVENTURE →",lambda:self.open_campaign(id)).pack(padx=20,pady=20)
@@ -126,6 +129,12 @@ class App(tk.Tk):
             panel=self.frame(left);panel.pack(fill="x",padx=10,pady=6)
             self.label(panel,heading,17).pack(padx=12,pady=8)
             for line in lines:self.label(panel,line,12).pack(anchor="w",padx=12,pady=2)
+        portrait=self.frame(right);portrait.pack(fill="x",padx=10,pady=6)
+        self.label(portrait,"CHARACTER SPRITE",17).pack(padx=12,pady=8)
+        canvas=tk.Canvas(portrait,width=210,height=210,bg="#b9ad96",highlightthickness=3,highlightbackground=GOLD)
+        canvas.pack(pady=8)
+        character(canvas,c,x=37,y=20,scale=6)
+        self.label(portrait,c["race"]+"  /  "+c["class"]+"  /  "+c["path"],12).pack(padx=12,pady=6)
         for heading,lines in [("MOVESET",c["moves"]),("PASSIVES",c["passives"]),("EQUIPMENT",c["inventory"])]:
             panel=self.frame(right);panel.pack(fill="x",padx=10,pady=6)
             self.label(panel,heading,17).pack(padx=12,pady=8)
@@ -141,10 +150,26 @@ class App(tk.Tk):
             r=roll_d20(modifier)
             result=f"{text}\nD20 {r['roll']} {modifier:+} = {r['total']} vs {r['dc']}: {r['degree']}"
             self.data["history"].append(result);self.save()
-            messagebox.showinfo("D20 ROLL",result)
+            self.show_dice(r,result)
             entry.delete(0,"end")
         self.button(actions,"ROLL D20",act).pack(padx=12,pady=10)
         self.button(actions,"SAVE & RETURN TO CAMPAIGNS",self.return_home).pack(padx=12,pady=9)
+    def show_dice(self,result,description):
+        pop=tk.Toplevel(self)
+        pop.title("D20 — Outcome")
+        pop.configure(bg=BACKGROUND)
+        pop.geometry("360x430")
+        pop.transient(self)
+        pop.grab_set()
+        self.label(pop,"THE D20 HAS SPOKEN",20,bg=BACKGROUND).pack(padx=20,pady=14)
+        die=tk.Canvas(pop,width=250,height=215,bg=BACKGROUND,highlightthickness=0)
+        die.pack()
+        d20(die,result["roll"])
+        self.label(pop,result["degree"].upper(),19,bg=BACKGROUND).pack(padx=18,pady=9)
+        self.label(pop,"Roll %s  %+d  =  %s  vs DC %s"%(result["roll"],result["modifier"],result["total"],result["dc"]),12,bg=BACKGROUND).pack(pady=5)
+        self.label(pop,description,11,bg=BACKGROUND,wraplength=310).pack(pady=6,padx=16)
+        self.button(pop,"CONTINUE",pop.destroy).pack(pady=10)
+
     def return_home(self):
         self.save();self.active_id=None;self.data=None;self.home()
 
