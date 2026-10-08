@@ -5,6 +5,8 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk,messagebox
 from game import new_campaign,create_character,save_campaign,list_campaigns,roll_d20
+from updater import activate,load_active
+from urllib.request import urlopen,Request
 
 APP_ROOT=Path.home()/"Library"/"Application Support"/"ACE Adventures 2"
 BACKGROUND="#211b1a";PANEL="#3b3028";GOLD="#d9b982";INK="#f0e5cd";BUTTON="#67513b"
@@ -28,7 +30,25 @@ class App(tk.Tk):
     def header(self):
         h=self.frame(self,bg="#30251f");h.pack(fill="x",padx=12,pady=10)
         self.label(h,"⚔ ACE ADVENTURES 2",22,bg="#30251f").pack(side="left",padx=14,pady=9)
+        self.button(h,"Check Updates",self.check_updates).pack(side="right",padx=10)
         self.button(h,"Campaign Library",self.home).pack(side="right",padx=10)
+    def check_updates(self):
+        """The initial app checks GitHub; activation requires an explicit user click."""
+        try:
+            url="https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/latest.json"
+            with urlopen(Request(url,headers={"User-Agent":"ACE-Adventures-2"}),timeout=15) as resp:
+                manifest=json.load(resp)
+            installed=load_active(APP_ROOT/"updates")["version"]
+            if manifest["version"] == installed:
+                messagebox.showinfo("Updates","You have the latest version.")
+                return
+            if not messagebox.askyesno("ACE Adventures Update","Version "+manifest["version"]+" is available. Download and verify it?"):
+                return
+            activate(APP_ROOT/"updates",manifest)
+            messagebox.showinfo("Update downloaded","The update was verified and staged. It will take effect after a restart once the stable launcher is enabled.")
+        except Exception as exc:
+            messagebox.showerror("Update problem",str(exc))
+
     def home(self):
         self.clear();self.header()
         body=self.frame(self,bg=BACKGROUND);body.pack(fill="both",expand=True,padx=12,pady=(0,12))
