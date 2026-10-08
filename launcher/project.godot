@@ -1,0 +1,17 @@
+; Separate stable launcher project. Its embedded base-game.pck is created by CI.
+config_version=5
+
+[application]
+config/name="ACE Adventures"
+run/main_scene="res://launcher/bootstrap.tscn"
+config/features=PackedStringArray("4.0", "GL Compatibility")
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/stretch/mode="canvas_items"
+
+[rendering]
+textures/vram_compression/import_etc2_astc=true
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
