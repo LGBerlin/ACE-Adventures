@@ -61,12 +61,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create v0.3.3 \
-            "build/ACE Adventures Mac.zip" \
-            "build/ACE Adventures Mac.zip.sha256" \
-            --title "ACE Adventures v0.3.3" \
-            --notes "Fix the GitHub updater by switching to a published version manifest." \
-            --latest
+          if gh release view v0.3.3 >/dev/null 2>&1; then
+            gh release upload v0.3.3 "build/ACE Adventures Mac.zip" "build/ACE Adventures Mac.zip.sha256" --clobber
+          else
+            gh release create v0.3.3 \
+              "build/ACE Adventures Mac.zip" \
+              "build/ACE Adventures Mac.zip.sha256" \
+              --title "ACE Adventures v0.3.3" \
+              --notes "Fix GitHub updater using a published version manifest." \
+              --latest
+          fi
 
       - name: Publish API-free update manifest
         run: |
@@ -75,6 +79,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add godot-update.json
-          git commit -m "Publish verified v0.3.3 game update metadata"
+          git diff --cached --quiet || git commit -m "Publish verified v0.3.3 game update metadata"
           git pull --rebase origin main
           git push origin HEAD:main
