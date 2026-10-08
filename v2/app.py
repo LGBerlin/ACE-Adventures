@@ -46,7 +46,7 @@ class App(tk.Tk):
             if not messagebox.askyesno("ACE Adventures Update","Version "+manifest["version"]+" is available. Download and verify it?"):
                 return
             activate(APP_ROOT/"updates",manifest)
-            messagebox.showinfo("Update downloaded","The update was verified and staged. It will take effect after a restart once the stable launcher is enabled.")
+            messagebox.showinfo("Update downloaded","The update was verified. Quit and reopen ACE Adventures 2 to load it.")
         except Exception as exc:
             messagebox.showerror("Update problem",str(exc))
 
