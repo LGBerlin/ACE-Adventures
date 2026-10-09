@@ -28,6 +28,7 @@ def _verified_dir(name):
 def _load_path(path):
     # Explicit names ensure PyInstaller's bundled import hooks cannot silently
     # select the stale app instead of the updated payload.
+    saved={name:sys.modules.get(name) for name in MODULES}
     for module in MODULES:
         sys.modules.pop(module,None)
     try:
@@ -40,7 +41,10 @@ def _load_path(path):
             spec.loader.exec_module(loaded)
         return sys.modules["app"].App
     except BaseException:
-        for name in MODULES:sys.modules.pop(name,None)
+        for name in MODULES:
+            sys.modules.pop(name,None)
+            if saved[name] is not None:
+                sys.modules[name]=saved[name]
         raise
 
 def _log_failure(stage):
@@ -61,7 +65,8 @@ def launch():
             if active:
                 try:
                     app_class=_load_path(active)
-                    return app_class().mainloop()
+                    instance=app_class()
+                    return instance.mainloop()
                 except Exception:
                     _log_failure("Active update failed: "+str(state.get("version")))
                     previous=_verified_dir(state.get("previous"))
