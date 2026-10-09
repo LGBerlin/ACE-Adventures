@@ -7,6 +7,8 @@ from tkinter import ttk,messagebox
 from game import new_campaign,create_character,save_campaign,list_campaigns,roll_d20,begin_encounter,attempt_action,party,begin_story
 from updater import activate,load_active
 from urllib.request import urlopen,Request
+import ssl
+import certifi
 from pixel_art import forest,character,d20
 
 APP_ROOT=Path.home()/"Library"/"Application Support"/"ACE Adventures 2"
@@ -37,7 +39,7 @@ class App(tk.Tk):
         """The initial app checks GitHub; activation requires an explicit user click."""
         try:
             url="https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/latest.json"
-            with urlopen(Request(url,headers={"User-Agent":"ACE-Adventures-2"}),timeout=15) as resp:
+            with urlopen(Request(url,headers={"User-Agent":"ACE-Adventures-2"}),timeout=15,context=ssl.create_default_context(cafile=certifi.where())) as resp:
                 manifest=json.load(resp)
             installed=load_active(APP_ROOT/"updates")["version"]
             if manifest["version"] == installed:
