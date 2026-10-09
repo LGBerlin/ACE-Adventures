@@ -1,0 +1,50 @@
+name: ACE Adventures V2 Actual Window Smoke Test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'v2/updates/**'
+      - 'v2/bootstrap.py'
+      - '.github/workflows/v2-window-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mac-window:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime dependencies
+        run: python -m pip install certifi
+      - name: Test actual Tk application creation and adventure screens
+        env:
+          PYTHONPATH: ${{ github.workspace }}/v2
+        run: |
+          python - <<'PY'
+          import importlib.util, json, tempfile, pathlib, sys
+          src=pathlib.Path("v2/updates/1.3.0")
+          sys.path.insert(0,str(src.resolve()))
+          spec=importlib.util.spec_from_file_location("app",src/"app.py")
+          module=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          app=module.App()
+          app.update()
+          app.active_id="test"
+          from game import new_campaign,add_party_character,begin_story
+          data=new_campaign("Test Adventure",2)
+          add_party_character(data,"Rogue A",20,"Rogue")
+          add_party_character(data,"Mage B",22,"Mage")
+          begin_story(data)
+          app.data=data
+          app.character_sheet()
+          app.update()
+          app.select_member(1)
+          app.update()
+          app.destroy()
+          print("Game window, party tab, and character switch opened successfully")
+          PY
