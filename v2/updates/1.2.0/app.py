@@ -38,7 +38,7 @@ class App(tk.Tk):
     def check_updates(self):
         """The initial app checks GitHub; activation requires an explicit user click."""
         try:
-            url="https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/latest.json"
+            url="https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/latest.json?refresh="+str(__import__("time").time_ns())
             with urlopen(Request(url,headers={"User-Agent":"ACE-Adventures-2"}),timeout=15,context=ssl.create_default_context(cafile=certifi.where())) as resp:
                 manifest=json.load(resp)
             installed=load_active(APP_ROOT/"updates")["version"]
