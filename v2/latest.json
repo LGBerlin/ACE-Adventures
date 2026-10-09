@@ -1,7 +1,7 @@
 {
   "version": "1.2.0",
-  "base": "1.1.0",
-  "notes": "Start playable campaigns with one permanent character roll for each of up to eight players, saved party switching, persistent encounters, and local Ollama Dungeon Master narration.",
+  "base": "1.0.0",
+  "notes": "Cumulative update from 1.0.0: party characters, campaign start, Ollama narration, encounters, and HTTPS certificate fix.",
   "files": [
     {
       "path": "app.py",
