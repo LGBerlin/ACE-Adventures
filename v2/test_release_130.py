@@ -23,12 +23,12 @@ class ReleaseTests(unittest.TestCase):
         add_party_character=module.add_party_character
         party=module.party
         begin_story=module.begin_story
-            d=new_campaign("Test",2)
-            add_party_character(d,"Alpha",22,"Rogue")
-            self.assertEqual(len(party(d)),1)
-            with self.assertRaises(ValueError):begin_story(d)
-            add_party_character(d,"Beta",25,"Vessel")
-            self.assertTrue(begin_story(d))
-            self.assertFalse(begin_story(d))
-            self.assertEqual(len(party(d)),2)
+        d=new_campaign("Test",2)
+        add_party_character(d,"Alpha",22,"Rogue")
+        self.assertEqual(len(party(d)),1)
+        with self.assertRaises(ValueError):begin_story(d)
+        add_party_character(d,"Beta",25,"Vessel")
+        self.assertTrue(begin_story(d))
+        self.assertFalse(begin_story(d))
+        self.assertEqual(len(party(d)),2)
 if __name__=="__main__":unittest.main()
