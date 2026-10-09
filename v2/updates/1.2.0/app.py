@@ -18,7 +18,7 @@ class App(tk.Tk):
         self.geometry("1150x740")
         self.minsize(820,570)
         self.configure(bg=BACKGROUND)
-        self.active_id=None;self.data=None
+        self.active_id=None;self.data=None;self.active_member_index=0
         self.home()
     def clear(self):
         for w in self.winfo_children():w.destroy()
@@ -119,12 +119,28 @@ class App(tk.Tk):
         except Exception as e:return messagebox.showerror("Campaign error",str(e))
         self.active_id=id
         party(self.data)
+        self.active_member_index=min(int(self.data.get("active_member_index",0)),max(0,len(self.data["characters"])-1))
+        if self.data["characters"]:
+            self.data["character"]=self.data["characters"][self.active_member_index]
         if len(self.data["characters"])<int(self.data.get("players",1)):
             self.character_creation()
         else:
             self.character_sheet()
     def save(self):
-        if self.active_id and self.data:save_campaign(APP_ROOT,self.active_id,self.data)
+        if self.active_id and self.data:
+            members=party(self.data)
+            if members and self.data.get("character"):
+                members[self.active_member_index]=self.data["character"]
+            self.data["active_member_index"]=self.active_member_index
+            save_campaign(APP_ROOT,self.active_id,self.data)
+    def select_member(self,index):
+        self.save()
+        members=party(self.data)
+        if 0<=index<len(members):
+            self.active_member_index=index
+            self.data["character"]=members[index]
+            self.save()
+            self.character_sheet()
     def character_creation(self):
         self.clear();self.header();p=self.frame(self);p.pack(fill="x",padx=70,pady=35)
         self.label(p,"CHARACTER ROULETTE — PLAYER %d OF %d"%(len(party(self.data))+1,int(self.data.get("players",1))),19).pack(padx=20,pady=15)
@@ -148,6 +164,7 @@ class App(tk.Tk):
             if not messagebox.askyesno("Permanent roll","Your class, name and age are chosen. All other results are permanent. Generate character?"):return
             self.data.setdefault("characters",[]).append(hero)
             self.data["character"]=self.data["characters"][0]
+            self.active_member_index=0
             self.data["history"].append(hero["name"]+" joins the party at Ironwood Crossing.")
             self.save()
             if len(self.data["characters"])<int(self.data.get("players",1)):
@@ -161,7 +178,9 @@ class App(tk.Tk):
         c=self.data["character"]
         party_bar=self.frame(self)
         party_bar.pack(fill="x",padx=12,pady=6)
-        self.label(party_bar,"PARTY · "+", ".join(h["name"]+" ("+h["path"]+")" for h in members),12).pack(side="left",padx=12,pady=8)
+        self.label(party_bar,"PARTY",12).pack(side="left",padx=8,pady=8)
+        for i,member in enumerate(members):
+            self.button(party_bar,("● " if i==self.active_member_index else "")+member["name"],lambda idx=i:self.select_member(idx)).pack(side="left",padx=2)
         if not self.data.get("started"):
             self.button(party_bar,"START CAMPAIGN",self.start_campaign).pack(side="right",padx=10,pady=4)
         else:
