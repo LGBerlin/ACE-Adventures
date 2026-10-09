@@ -1,21 +1,21 @@
 {
-  "version": "1.1.0",
-  "base": "1.0.0",
-  "notes": "Persistent forest encounters, HP and mana effects, typed tactics, D20 outcomes, XP and gold rewards.",
+  "version": "1.2.0",
+  "base": "1.1.0",
+  "notes": "Start playable campaigns with one permanent character roll for each of up to eight players, saved party switching, persistent encounters, and local Ollama Dungeon Master narration.",
   "files": [
     {
       "path": "app.py",
-      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.1.0/app.py",
-      "sha256": "75924c0f809b8c7c3149abe2f9a61de41bc7ab53c8b4d60fe95c3ca561780caf"
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.2.0/app.py",
+      "sha256": "f3496240def2a2e480cd96f662516a85b82c2d9a617ae7fcb4aeabff44f68882"
     },
     {
       "path": "game.py",
-      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.1.0/game.py",
-      "sha256": "7ac99a48f45b53e42b8c65a9407f99b95083f13b58accf0d87ea912b482701d8"
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.2.0/game.py",
+      "sha256": "03759fdd3340cf394218cb8708085d5f73aed46bc5424f8adf97469115416819"
     },
     {
       "path": "pixel_art.py",
-      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.1.0/pixel_art.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.2.0/pixel_art.py",
       "sha256": "ee5e8ab8daadf8c3e110cb553228d254ebf8f495028f32c46a35cfa6abf22010"
     }
   ]
