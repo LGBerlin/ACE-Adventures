@@ -15,11 +15,14 @@ class ReleaseTests(unittest.TestCase):
                        'def _check_ollama_async', 'attempt_action(self.data,text)'):
             self.assertIn(marker,source)
     def test_party_and_campaign_state(self):
-        import sys
         root=Path(__file__).parent/"updates"/"1.3.0"
-        sys.path.insert(0,str(root))
-        try:
-            from game import new_campaign,add_party_character,party,begin_story
+        spec=importlib.util.spec_from_file_location("ace_release_130_game",root/"game.py")
+        module=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        new_campaign=module.new_campaign
+        add_party_character=module.add_party_character
+        party=module.party
+        begin_story=module.begin_story
             d=new_campaign("Test",2)
             add_party_character(d,"Alpha",22,"Rogue")
             self.assertEqual(len(party(d)),1)
@@ -28,7 +31,4 @@ class ReleaseTests(unittest.TestCase):
             self.assertTrue(begin_story(d))
             self.assertFalse(begin_story(d))
             self.assertEqual(len(party(d)),2)
-        finally:
-            sys.path.remove(str(root))
-            sys.modules.pop("game",None)
 if __name__=="__main__":unittest.main()
