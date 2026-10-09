@@ -8,6 +8,7 @@ import importlib.util
 import json
 import sys
 import traceback
+import datetime
 from pathlib import Path
 
 APP_DATA=Path.home()/"Library"/"Application Support"/"ACE Adventures 2"
@@ -42,6 +43,12 @@ def _load_path(path):
         for name in MODULES:sys.modules.pop(name,None)
         raise
 
+def _log_failure(stage):
+    APP_DATA.mkdir(parents=True,exist_ok=True)
+    with (APP_DATA/"startup-errors.log").open("a",encoding="utf-8") as log:
+        log.write("\n"+datetime.datetime.now().isoformat()+" "+stage+"\n")
+        traceback.print_exc(file=log)
+
 def launch():
     # The imported copy is the bootstrap's fallback; the normal app stays
     # operational even if the new update cannot be imported.
@@ -53,17 +60,18 @@ def launch():
             active=_verified_dir(state.get("directory"))
             if active:
                 try:
-                    return _load_path(active)().mainloop()
+                    app_class=_load_path(active)
+                    return app_class().mainloop()
                 except Exception:
-                    traceback.print_exc()
+                    _log_failure("Active update failed: "+str(state.get("version")))
                     previous=_verified_dir(state.get("previous"))
                     if previous:
                         try:
                             app=_load_path(previous)
                             marker.write_text(json.dumps({"version":state["previous"],"directory":state["previous"],"previous":None}))
                             return app().mainloop()
-                        except Exception:traceback.print_exc()
-        except Exception:traceback.print_exc()
+                        except Exception:_log_failure("Previous update also failed")
+        except Exception:_log_failure("Launcher state failed")
     return bundled_app().mainloop()
 
 if __name__=="__main__":
