@@ -98,3 +98,32 @@ def attempt_action(campaign,text):
     event=text+"\nD20 %s %+d vs DC %s: %s. "%(die["roll"],bonus,dc,degree)+" ".join(notes)
     campaign.setdefault("history",[]).append(event)
     return die,event
+
+def party(campaign):
+    """Migrate old single-character campaigns without changing their saved hero."""
+    if "characters" not in campaign:
+        old=campaign.get("character")
+        campaign["characters"]=[old] if old else []
+    return campaign["characters"]
+
+def add_party_character(campaign,name,age,cls):
+    members=party(campaign)
+    capacity=int(campaign.get("players",1))
+    if len(members)>=capacity:
+        raise ValueError("This party already has all its characters.")
+    hero=create_character(name,age,cls)
+    members.append(hero)
+    campaign["character"]=members[0]  # active player; preserve existing battle compatibility
+    return hero
+
+def begin_story(campaign):
+    members=party(campaign)
+    if not members:raise ValueError("Create at least one character first.")
+    if len(members)<int(campaign.get("players",1)):
+        raise ValueError("Finish creating all %d players first."%int(campaign.get("players",1)))
+    if campaign.get("started"):
+        return False
+    campaign["started"]=True
+    campaign.setdefault("world",{"town":"Ironwood Crossing","day":1,"weather":"Cool mist","visited":["Ironwood Crossing"]})
+    campaign.setdefault("history",[]).append("The party gathers at Ironwood Crossing, where a village bell tolls without anyone touching it.")
+    return True
