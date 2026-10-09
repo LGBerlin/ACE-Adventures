@@ -4,7 +4,7 @@ import json,sys,uuid,threading,urllib.request
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk,messagebox
-from game import new_campaign,create_character,save_campaign,list_campaigns,roll_d20,begin_encounter,attempt_action
+from game import new_campaign,create_character,save_campaign,list_campaigns,roll_d20,begin_encounter,attempt_action,party,begin_story
 from updater import activate,load_active
 from urllib.request import urlopen,Request
 from pixel_art import forest,character,d20
@@ -14,7 +14,7 @@ BACKGROUND="#211b1a";PANEL="#3b3028";GOLD="#d9b982";INK="#f0e5cd";BUTTON="#67513
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("ACE Adventures 2 — AI Narrator 1.2.0")
+        self.title("ACE Adventures 2 — Campaigns 1.2.0")
         self.geometry("1150x740")
         self.minsize(820,570)
         self.configure(bg=BACKGROUND)
@@ -30,7 +30,7 @@ class App(tk.Tk):
         return tk.Frame(where,bg=kw.get("bg",PANEL),highlightbackground=GOLD,highlightthickness=2)
     def header(self):
         h=self.frame(self,bg="#30251f");h.pack(fill="x",padx=12,pady=10)
-        self.label(h,"⚔ ACE ADVENTURES 2  ·  AI NARRATOR v1.2.0",22,bg="#30251f").pack(side="left",padx=14,pady=9)
+        self.label(h,"⚔ ACE ADVENTURES 2  ·  CAMPAIGNS v1.2.0",22,bg="#30251f").pack(side="left",padx=14,pady=9)
         self.button(h,"Check Updates",self.check_updates).pack(side="right",padx=10)
         self.button(h,"Campaign Library",self.home).pack(side="right",padx=10)
     def check_updates(self):
@@ -118,13 +118,16 @@ class App(tk.Tk):
         try:self.data=json.loads(p.read_text())
         except Exception as e:return messagebox.showerror("Campaign error",str(e))
         self.active_id=id
-        if self.data.get("character"):self.character_sheet()
-        else:self.character_creation()
+        party(self.data)
+        if len(self.data["characters"])<int(self.data.get("players",1)):
+            self.character_creation()
+        else:
+            self.character_sheet()
     def save(self):
         if self.active_id and self.data:save_campaign(APP_ROOT,self.active_id,self.data)
     def character_creation(self):
         self.clear();self.header();p=self.frame(self);p.pack(fill="x",padx=70,pady=35)
-        self.label(p,"CHARACTER ROULETTE — ONE PERMANENT ROLL",19).pack(padx=20,pady=15)
+        self.label(p,"CHARACTER ROULETTE — PLAYER %d OF %d"%(len(party(self.data))+1,int(self.data.get("players",1))),19).pack(padx=20,pady=15)
         self.label(p,"Choose a name, age, and one of four classes. Everything else is random.",12).pack(padx=20,pady=8)
         self.label(p,"Name",13).pack(padx=20,pady=5)
         name=tk.Entry(p,font=("Menlo",14));name.pack(padx=20,pady=5)
@@ -137,16 +140,32 @@ class App(tk.Tk):
         selected=self.label(p,"No class selected",13);selected.pack(pady=5)
         chosen.trace_add("write",lambda *_:selected.configure(text="SELECTED CLASS: "+chosen.get()))
         def generate():
-            if self.data.get("character"):return
             try:
+                if len(party(self.data))>=int(self.data.get("players",1)):return
+                if not chosen.get():raise ValueError("Select a class first.")
                 hero=create_character(name.get(),age.get(),chosen.get())
             except ValueError as e:return messagebox.showerror("Character details",str(e))
             if not messagebox.askyesno("Permanent roll","Your class, name and age are chosen. All other results are permanent. Generate character?"):return
-            self.data["character"]=hero;self.data["history"].append("Your character enters Ironwood Crossing.")
-            self.save();self.character_sheet()
+            self.data.setdefault("characters",[]).append(hero)
+            self.data["character"]=self.data["characters"][0]
+            self.data["history"].append(hero["name"]+" joins the party at Ironwood Crossing.")
+            self.save()
+            if len(self.data["characters"])<int(self.data.get("players",1)):
+                self.character_creation()
+            else:
+                self.character_sheet()
         self.button(p,"GENERATE PERMANENT CHARACTER",generate).pack(padx=20,pady=16)
     def character_sheet(self):
-        self.clear();self.header();c=self.data["character"]
+        self.clear();self.header()
+        members=party(self.data)
+        c=self.data["character"]
+        party_bar=self.frame(self)
+        party_bar.pack(fill="x",padx=12,pady=6)
+        self.label(party_bar,"PARTY · "+", ".join(h["name"]+" ("+h["path"]+")" for h in members),12).pack(side="left",padx=12,pady=8)
+        if not self.data.get("started"):
+            self.button(party_bar,"START CAMPAIGN",self.start_campaign).pack(side="right",padx=10,pady=4)
+        else:
+            self.label(party_bar,"CAMPAIGN IN PROGRESS  ·  "+self.data.get("location","Ironwood Crossing"),12).pack(side="right",padx=10)
         columns=self.frame(self,bg=BACKGROUND);columns.pack(fill="both",expand=True,padx=12,pady=8)
         left=self.frame(columns);left.pack(side="left",fill="both",expand=True,padx=6,pady=5)
         right=self.frame(columns);right.pack(side="left",fill="both",expand=True,padx=6,pady=5)
@@ -187,6 +206,9 @@ class App(tk.Tk):
         def act():
             text=entry.get().strip()
             if not text:return
+            if not self.data.get("started"):
+                messagebox.showwarning("Campaign not started","Click START CAMPAIGN before taking actions.")
+                return
             try:
                 result,event=attempt_action(self.data,text)
             except ValueError as e:
@@ -198,6 +220,17 @@ class App(tk.Tk):
             self.narrate_async(text,event,self.active_id)
         self.button(actions,"ATTEMPT ACTION · ROLL D20",act).pack(padx=12,pady=10)
         self.button(actions,"SAVE & RETURN TO CAMPAIGNS",self.return_home).pack(padx=12,pady=9)
+    def start_campaign(self):
+        try:
+            fresh=begin_story(self.data)
+            self.save()
+            self.character_sheet()
+            if fresh:
+                self.narrate_async("Begin the campaign. Introduce the town, the party, and an intriguing mystery without changing game state.",
+                    "The campaign starts at Ironwood Crossing. All party members are present. No dice were rolled and no items or HP changed.",self.active_id)
+        except ValueError as exc:
+            messagebox.showwarning("Campaign setup",str(exc))
+
     def show_dice(self,result,description):
         pop=tk.Toplevel(self)
         pop.title("D20 — Outcome")
