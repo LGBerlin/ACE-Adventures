@@ -29,11 +29,11 @@ jobs:
           python -m unittest discover -s . -p 'test_*.py' -v
           python -m compileall -q .
       - name: Install packager
-        run: python -m pip install pyinstaller
+        run: python -m pip install pyinstaller certifi
       - name: Build standalone windowed app
         run: |
           cd v2
-          pyinstaller --noconfirm --clean --windowed --name "ACE Adventures 2" --hidden-import app --hidden-import game --hidden-import pixel_art bootstrap.py
+          pyinstaller --noconfirm --clean --windowed --name "ACE Adventures 2" --hidden-import app --hidden-import game --hidden-import pixel_art --collect-data certifi bootstrap.py
           test -d "dist/ACE Adventures 2.app/Contents/MacOS"
       - name: Validate packaged executable
         run: |
