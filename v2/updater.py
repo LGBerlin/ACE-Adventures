@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import ssl
+import certifi
 import tempfile
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -107,5 +109,5 @@ def rollback(root: Path) -> None:
     os.replace(marker_tmp, root / "active.json")
 
 def _fetch(url: str) -> bytes:
-    with urlopen(Request(url, headers={"User-Agent": "ACE-Adventures-2"}), timeout=25) as response:
+    with urlopen(Request(url, headers={"User-Agent": "ACE-Adventures-2"}), timeout=25, context=ssl.create_default_context(cafile=certifi.where())) as response:
         return response.read(25_000_001)
