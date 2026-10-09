@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "base": "0.0.0",
+  "notes": "Updater test: the app header displays UPDATED v1.0.0 after restart.",
+  "files": [
+    {
+      "path": "app.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.0.0/app.py",
+      "sha256": "d544983cf8c41b5e70cf63a854817109a6e56c803cf8161f06f623322dfba1b9"
+    },
+    {
+      "path": "game.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.0.0/game.py",
+      "sha256": "a0d9ce266fcaf0599c7c8dac2855affa60c23be22546e38bb11a2c562a9a41a6"
+    },
+    {
+      "path": "pixel_art.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.0.0/pixel_art.py",
+      "sha256": "ee5e8ab8daadf8c3e110cb553228d254ebf8f495028f32c46a35cfa6abf22010"
+    }
+  ]
+}
