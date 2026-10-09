@@ -164,8 +164,8 @@ class App(tk.Tk):
                 messagebox.showwarning("Action not possible",str(e))
                 return
             self.save()
-            self.show_dice(result,event)
             self.character_sheet()
+            self.show_dice(result,event)
         self.button(actions,"ATTEMPT ACTION · ROLL D20",act).pack(padx=12,pady=10)
         self.button(actions,"SAVE & RETURN TO CAMPAIGNS",self.return_home).pack(padx=12,pady=9)
     def show_dice(self,result,description):
