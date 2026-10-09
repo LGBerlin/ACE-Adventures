@@ -1,21 +1,21 @@
 {
-  "version": "1.2.1",
-  "base": "1.0.0",
-  "notes": "Immutable cumulative update from 1.0.0: complete party creation, campaign start, Ollama storytelling, D20 encounters and SSL certificate fixes.",
+  "version": "1.3.0",
+  "base": "1.2.1",
+  "notes": "Playable campaign UX: persistent multi-character party, quick sheet/inventory/moves tabs, adventure log, D20 checks, nonblocking Ollama narration and Ollama status.",
   "files": [
     {
       "path": "app.py",
-      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.2.1/app.py",
-      "sha256": "6b78dff2c7f64d006010643d4977c39acbc7d509ad6b90537a42d6a5509b1e02"
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.3.0/app.py",
+      "sha256": "07fc3603f6f8c60942ec4a04c017984b88f17d868b4d5a9ec6d9f75c3fad7e4e"
     },
     {
       "path": "game.py",
-      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.2.1/game.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.3.0/game.py",
       "sha256": "03759fdd3340cf394218cb8708085d5f73aed46bc5424f8adf97469115416819"
     },
     {
       "path": "pixel_art.py",
-      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.2.1/pixel_art.py",
+      "url": "https://raw.githubusercontent.com/LGBerlin/ACE-Adventures/main/v2/updates/1.3.0/pixel_art.py",
       "sha256": "ee5e8ab8daadf8c3e110cb553228d254ebf8f495028f32c46a35cfa6abf22010"
     }
   ]
